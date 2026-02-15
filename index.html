@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Monkey - Telegram Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Навигация */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1rem 2rem;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-link {
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: #f0f0f0;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Страницы */
+        .page {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Карточки */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Формы */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* Список чатов */
+        .chats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .chat-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .chat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .chat-card.selected {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .chat-type {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .chat-last-message {
+            font-size: 0.9rem;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .unread-badge {
+            background: #ef4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+
+        /* Лог */
+        .log {
+            background: #1e1e2f;
+            color: #00ff9d;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Аккаунты */
+        .account-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .account-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            background: #10b981;
+            color: white;
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+        }
+
+        .notification.success { background: #10b981; }
+        .notification.error { background: #ef4444; }
+        .notification.info { background: #3b82f6; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Навигация -->
+        <div class="navbar">
+            <div class="logo">Dev Monkey 🐒</div>
+            <div class="nav-links">
+                <div class="nav-link active" data-page="login">🔑 Вход</div>
+                <div class="nav-link" data-page="broadcast">📨 Рассылка</div>
+                <div class="nav-link" data-page="chats">💬 Чаты</div>
+                <div class="nav-link" data-page="accounts">👥 Аккаунты</div>
+            </div>
+            <div class="user-info" id="userInfo">
+                <span>👤 Не авторизован</span>
+            </div>
+        </div>
+
+        <!-- Страница входа -->
+        <div id="loginPage" class="page active">
+            <div class="card">
+                <h2 class="card-title">🔑 Вход в Telegram через Pyrogram</h2>
+                
+                <div class="form-group">
+                    <label>📱 Номер телефона (с кодом страны)</label>
+                    <input type="text" id="phoneNumber" placeholder="+79001234567" value="">
+                </div>
+
+                <div class="form-group" id="codeGroup" style="display: none;">
+                    <label>🔢 Код из Telegram</label>
+                    <input type="text" id="authCode" placeholder="12345">
+                </div>
+
+                <div class="form-group" id="passwordGroup" style="display: none;">
+                    <label>🔐 Пароль 2FA (если включен)</label>
+                    <input type="password" id="password" placeholder="••••••••">
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn btn-primary" id="sendCodeBtn">📤 Отправить код</button>
+                    <button class="btn btn-success" id="verifyCodeBtn" style="display: none;">✅ Подтвердить код</button>
+                    <button class="btn" id="checkSessionsBtn">👁️ Проверить сессии</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">📋 Активные сессии</h2>
+                <div id="sessionsList">
+                    <p>Нет активных сессий</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Страница рассылки -->
+        <div id="broadcastPage" class="page">
+            <div class="card">
+                <h2 class="card-title">📨 Массовая рассылка</h2>
+
+                <div class="form-group">
+                    <label>👤 Выберите аккаунт</label>
+                    <select id="broadcastAccount">
+                        <option value="">Сначала войдите в аккаунт</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>📝 Текст сообщения</label>
+                    <textarea id="broadcastMessage" rows="4">Привет! Это тестовая рассылка от Dev Monkey 🐒</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>⏱️ Задержка между сообщениями (секунд)</label>
+                    <input type="number" id="broadcastDelay" value="3" min="1" max="60">
+                </div>
+
+                <div class="form-group">
+                    <label>💬 Выберите чаты (максимум 20)</label>
+                    <button class="btn" id="loadChatsForBroadcast" style="margin-bottom: 15px;">🔄 Загрузить чаты</button>
+                    <div id="chatsForBroadcast" class="chats-grid">
+                        <!-- Чаты загрузятся сюда -->
+                    </div>
+                    <p style="margin-top: 10px;">Выбрано: <span id="selectedChatsCount">0</span>/20</p>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn btn-primary" id="startBroadcastBtn">🚀 Запустить рассылку</button>
+                    <button class="btn btn-danger" id="stopBroadcastBtn" disabled>⏹️ Остановить</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h3>📊 Лог рассылки:</h3>
+                    <div id="broadcastLog" class="log">Готов к рассылке...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Страница чатов -->
+        <div id="chatsPage" class="page">
+            <div class="card">
+                <h2 class="card-title">💬 Мои чаты</h2>
+
+                <div class="form-group">
+                    <label>👤 Выберите аккаунт</label>
+                    <select id="chatsAccount">
+                        <option value="">Сначала войдите в аккаунт</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" id="loadChatsBtn" style="margin-bottom: 20px;">🔄 Загрузить чаты</button>
+
+                <div id="chatsList" class="chats-grid">
+                    <!-- Чаты появятся здесь -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">✉️ Отправить сообщение</h2>
+                
+                <div class="form-group">
+                    <label>ID чата</label>
+                    <input type="text" id="sendChatId" placeholder="Введите ID чата или выберите выше">
+                </div>
+
+                <div class="form-group">
+                    <label>Сообщение</label>
+                    <textarea id="sendMessageText" rows="3"></textarea>
+                </div>
+
+                <button class="btn btn-success" id="sendMessageBtn">📤 Отправить</button>
+            </div>
+        </div>
+
+        <!-- Страница аккаунтов -->
+        <div id="accountsPage" class="page">
+            <div class="card">
+                <h2 class="card-title">👥 Управление аккаунтами</h2>
+                
+                <button class="btn btn-primary" id="addAccountBtn" style="margin-bottom: 20px;">➕ Добавить аккаунт</button>
+
+                <div id="accountsList">
+                    <!-- Аккаунты появятся здесь -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification" style="display: none;"></div>
+
+    <script>
+        // Состояние приложения
+        const state = {
+            accounts: new Map(), // телефон -> данные аккаунта
+            selectedChats: new Set(),
+            broadcastInterval: null,
+            currentPhone: null
+        };
+
+        // Уведомления
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Навигация
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                const pageId = link.dataset.page;
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(pageId + 'Page').classList.add('active');
+            });
+        });
+
+        // Вход в аккаунт
+        document.getElementById('sendCodeBtn').addEventListener('click', async () => {
+            const phone = document.getElementById('phoneNumber').value;
+            
+            if (!phone) {
+                showNotification('Введите номер телефона', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('Код отправлен! Проверьте Telegram', 'success');
+                    document.getElementById('codeGroup').style.display = 'block';
+                    document.getElementById('sendCodeBtn').style.display = 'none';
+                    document.getElementById('verifyCodeBtn').style.display = 'inline-block';
+                    state.currentPhone = phone;
+                } else {
+                    showNotification(data.error || 'Ошибка', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка соединения', 'error');
+            }
+        });
+
+        // Подтверждение кода
+        document.getElementById('verifyCodeBtn').addEventListener('click', async () => {
+            const code = document.getElementById('authCode').value;
+            const password = document.getElementById('password').value;
+
+            if (!code) {
+                showNotification('Введите код', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: state.currentPhone,
+                        code,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('Вход выполнен успешно!', 'success');
+                    
+                    // Сохраняем аккаунт
+                    state.accounts.set(state.currentPhone, {
+                        phone: state.currentPhone,
+                        user: data.user,
+                        client: true
+                    });
+                    
+                    updateAccountsList();
+                    updateAccountSelects();
+                    
+                    // Сбрасываем форму
+                    document.getElementById('phoneNumber').value = '';
+                    document.getElementById('authCode').value = '';
+                    document.getElementById('password').value = '';
+                    document.getElementById('codeGroup').style.display = 'none';
+                    document.getElementById('passwordGroup').style.display = 'none';
+                    document.getElementById('sendCodeBtn').style.display = 'inline-block';
+                    document.getElementById('verifyCodeBtn').style.display = 'none';
+                    
+                    // Обновляем информацию о пользователе
+                    document.getElementById('userInfo').innerHTML = `<span>👤 ${data.user.first_name} ${data.user.last_name || ''}</span>`;
+                    
+                } else if (data.need_password) {
+                    document.getElementById('passwordGroup').style.display = 'block';
+                    showNotification('Требуется пароль 2FA', 'info');
+                } else {
+                    showNotification(data.error || 'Ошибка', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка соединения', 'error');
+            }
+        });
+
+        // Загрузка чатов
+        document.getElementById('loadChatsBtn').addEventListener('click', async () => {
+            const phone = document.getElementById('chatsAccount').value;
+            
+            if (!phone) {
+                showNotification('Выберите аккаунт', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/chats?phone=${encodeURIComponent(phone)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayChats(data.chats);
+                } else {
+                    showNotification(data.error || 'Ошибка загрузки чатов', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка соединения', 'error');
+            }
+        });
+
+        // Отображение чатов
+        function displayChats(chats) {
+            const container = document.getElementById('chatsList');
+            container.innerHTML = '';
+
+            chats.forEach(chat => {
+                const chatCard = document.createElement('div');
+                chatCard.className = 'chat-card';
+                chatCard.innerHTML = `
+                    <div class="chat-name">
+                        ${chat.name}
+                        ${chat.unread_count > 0 ? `<span class="unread-badge">${chat.unread_count}</span>` : ''}
+                    </div>
+                    <div class="chat-type">${chat.type}</div>
+                    <div class="chat-last-message">${chat.last_message || 'Нет сообщений'}</div>
+                    <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">ID: ${chat.id}</div>
+                `;
+                
+                chatCard.addEventListener('click', () => {
+                    document.getElementById('sendChatId').value = chat.id;
+                });
+                
+                container.appendChild(chatCard);
+            });
+        }
+
+        // Загрузка чатов для рассылки
+        document.getElementById('loadChatsForBroadcast').addEventListener('click', async () => {
+            const phone = document.getElementById('broadcastAccount').value;
+            
+            if (!phone) {
+                showNotification('Выберите аккаунт', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/chats?phone=${encodeURIComponent(phone)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayChatsForBroadcast(data.chats);
+                } else {
+                    showNotification(data.error || 'Ошибка загрузки чатов', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка соединения', 'error');
+            }
+        });
+
+        // Отображение чатов для рассылки
+        function displayChatsForBroadcast(chats) {
+            const container = document.getElementById('chatsForBroadcast');
+            container.innerHTML = '';
+            state.selectedChats.clear();
+            updateSelectedCount();
+
+            chats.forEach(chat => {
+                const chatCard = document.createElement('div');
+                chatCard.className = 'chat-card';
+                chatCard.dataset.id = chat.id;
+                chatCard.innerHTML = `
+                    <div class="chat-name">${chat.name}</div>
+                    <div class="chat-type">${chat.type}</div>
+                    <div class="chat-last-message">${chat.last_message || 'Нет сообщений'}</div>
+                `;
+                
+                chatCard.addEventListener('click', () => {
+                    if (state.selectedChats.has(chat.id)) {
+                        state.selectedChats.delete(chat.id);
+                        chatCard.classList.remove('selected');
+                    } else {
+                        if (state.selectedChats.size < 20) {
+                            state.selectedChats.add(chat.id);
+                            chatCard.classList.add('selected');
+                        } else {
+                            showNotification('Максимум 20 чатов', 'warning');
+                        }
+                    }
+                    updateSelectedCount();
+                });
+                
+                container.appendChild(chatCard);
+            });
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedChatsCount').textContent = state.selectedChats.size;
+        }
+
+        // Запуск рассылки
+        document.getElementById('startBroadcastBtn').addEventListener('click', async () => {
+            const phone = document.getElementById('broadcastAccount').value;
+            const message = document.getElementById('broadcastMessage').value;
+            const delay = document.getElementById('broadcastDelay').value;
+            
+            if (!phone) {
+                showNotification('Выберите аккаунт', 'error');
+                return;
+            }
+
+            if (state.selectedChats.size === 0) {
+                showNotification('Выберите хотя бы один чат', 'error');
+                return;
+            }
+
+            if (!message) {
+                showNotification('Введите сообщение', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone,
+                        chat_ids: Array.from(state.selectedChats),
+                        message,
+                        delay
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const log = document.getElementById('broadcastLog');
+                    log.innerHTML = `✅ Рассылка завершена!\n`;
+                    log.innerHTML += `Всего: ${data.total}, успешно: ${data.successful}\n`;
+                    data.results.forEach(r => {
+                        log.innerHTML += `\n${r.success ? '✅' : '❌'} Чат ${r.chat_id}: ${r.success ? 'OK' : r.error}`;
+                    });
+                } else {
+                    showNotification(data.error || 'Ошибка', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка соединения', 'error');
+            }
+        });
+
+        // Отправка сообщения
+        document.getElementById('sendMessageBtn').addEventListener('click', async () => {
+            const phone = document.getElementById('chatsAccount').value;
+            const chatId = document.getElementById('sendChatId').value;
+            const message = document.getElementById('sendMessageText').value;
+
+            if (!phone || !chatId || !message) {
+                showNotification('Заполните все поля', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, chat_id: chatId, message })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('Сообщение отправлено!', 'success');
+                    document.getElementById('sendMessageText').value = '';
+                } else {
+                    showNotification(data.error || 'Ошибка', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка соединения', 'error');
+            }
+        });
+
+        // Обновление списка аккаунтов в селектах
+        function updateAccountSelects() {
+            const selects = ['broadcastAccount', 'chatsAccount'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Выберите аккаунт</option>';
+                
+                state.accounts.forEach((account, phone) => {
+                    const option = document.createElement('option');
+                    option.value = phone;
+                    option.textContent = `${phone} (${account.user.first_name})`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        // Обновление списка аккаунтов на странице аккаунтов
+        function updateAccountsList() {
+            const container = document.getElementById('accountsList');
+            container.innerHTML = '';
+
+            state.accounts.forEach((account, phone) => {
+                const accountDiv = document.createElement('div');
+                accountDiv.className = 'account-item';
+                accountDiv.innerHTML = `
+                    <div>
+                        <div><strong>${account.user.first_name} ${account.user.last_name || ''}</strong></div>
+                        <div>📱 ${phone}</div>
+                        <div>@${account.user.username || 'нет юзернейма'}</div>
+                    </div>
+                    <div>
+                        <span class="account-status">Активен</span>
+                        <button class="btn btn-danger" style="margin-left: 10px;" onclick="logoutAccount('${phone}')">🚪 Выйти</button>
+                    </div>
+                `;
+                container.appendChild(accountDiv);
+            });
+        }
+
+        // Выход из аккаунта
+        window.logoutAccount = async (phone) => {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                if (response.ok) {
+                    state.accounts.delete(phone);
+                    updateAccountsList();
+                    updateAccountSelects();
+                    showNotification('Выход выполнен', 'success');
+                    
+                    if (state.accounts.size === 0) {
+                        document.getElementById('userInfo').innerHTML = '<span>👤 Не авторизован</span>';
+                    }
+                }
+            } catch (error) {
+                showNotification('Ошибка', 'error');
+            }
+        };
+
+        // Добавление нового аккаунта
+        document.getElementById('addAccountBtn').addEventListener('click', () => {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector('[data-page="login"]').classList.add('active');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('loginPage').classList.add('active');
+        });
+
+        // Проверка сессий
+        document.getElementById('checkSessionsBtn').addEventListener('click', () => {
+            const sessionsList = document.getElementById('sessionsList');
+            if (state.accounts.size > 0) {
+                let html = '';
+                state.accounts.forEach((account, phone) => {
+                    html += `<div class="account-item">
+                        <div>📱 ${phone} - ${account.user.first_name}</div>
+                        <span class="account-status">Активна</span>
+                    </div>`;
+                });
+                sessionsList.innerHTML = html;
+            } else {
+                sessionsList.innerHTML = '<p>Нет активных сессий</p>';
+            }
+        });
+
+        // Инициализация
+        console.log('Dev Monkey готов к работе!');
+    </script>
+</body>
+</html>
